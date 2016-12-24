@@ -1,0 +1,25 @@
+#include <iostream>
+#include <string>
+#include <fstream>
+using namespace std;
+
+const string mainString;
+const string needle;
+
+/*Function: main
+ *Parameters: command Line argument for name of the input file
+ *Returns : int
+ *Description: main function reads the word and the needle from
+ *			   the command line argument
+ * */
+int main(int argc, char* argv[]){
+
+
+	if (argc < 2){
+
+		//file name is not entered, so red your own string
+		filenma
+	}
+
+
+}

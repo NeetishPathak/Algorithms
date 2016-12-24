@@ -1,0 +1,8 @@
+# depslib dependency file v1.0
+1475126354 source:e:\algorithms\hw2\qsort\main.cpp
+	<iostream>
+	<vector>
+	<fstream>
+	<cstdlib>
+	<sys/time.h>
+

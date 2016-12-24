@@ -1,0 +1,74 @@
+#include <iostream>
+#include <string>
+#include <fstream>
+using namespace std;
+
+const string selfMainString = "adbabdbcefhrdtcvdbcef";
+const string selfNeedle = "cvdb";
+
+/*Function: naive
+ * Arguments: string, string
+ * Return: int
+ * Description: returns the index at the first occurrence of
+ * 				needle string n  in the main string m
+ * */
+int naive(string m, string n){
+	unsigned int i=0;
+	unsigned int j = 0;
+
+	while(i < m.length()){
+
+		while(n[j] == m[i]){
+
+			if(j == n.length()-1){
+				return (i - n.length() + 1);
+			}
+			i++;j++;
+		}
+
+		j=0;
+
+		if(n[j] != m[i]){
+			i++;
+		}
+	}
+
+	return -1;
+}
+
+/*Function: main
+ *Parameters: command Line argument for name of the input file
+ *Returns : int
+ *Description: main function reads the word and the needle from
+ *			   the command line argument
+ * */
+int main(int argc, char* argv[]){
+
+	string mainString = "";
+	string needle = "";
+
+	if (argc < 2){				//file name is not entered, so red your own string
+		mainString = selfMainString;
+		needle = selfNeedle;
+
+	}else{						//read the strings from the input file
+
+		ifstream inputFile(argv[1]);
+
+		if(!inputFile.is_open()){	//input file in not opening
+			cout << "Could not open the input file";
+		}else{
+			getline(inputFile, mainString);
+			getline(inputFile, needle);
+		}
+	}
+
+	cout << mainString << endl;
+	cout << needle << endl;
+
+	int naiveOp = naive(mainString, needle);
+
+	cout << naiveOp << endl;
+
+	return 0;
+}

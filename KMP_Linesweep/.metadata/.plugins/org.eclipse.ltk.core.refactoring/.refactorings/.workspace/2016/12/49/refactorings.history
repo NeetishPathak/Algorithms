@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">&#x0A;<refactoring comment="Delete 2 resources" deleteContents="false" description="Delete 2 resources" element1="/Line_Sweep/ofxSweepLine.h" element2="/Line_Sweep/sweep_b.cpp" flags="7" id="org.eclipse.ltk.core.refactoring.delete.resources" resources="2" stamp="1480742202349"/>&#x0A;<refactoring comment="Delete resource &apos;Line_Sweep/sweep_Original.cpp&apos;" deleteContents="false" description="Delete resource &apos;Line_Sweep/sweep_Original.cpp&apos;" element1="/Line_Sweep/sweep_Original.cpp" flags="7" id="org.eclipse.ltk.core.refactoring.delete.resources" resources="1" stamp="1480794924433"/>
+</session>

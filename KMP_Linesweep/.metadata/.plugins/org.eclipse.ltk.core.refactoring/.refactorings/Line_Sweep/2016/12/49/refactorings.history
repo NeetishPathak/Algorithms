@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename resource &apos;Line_Sweep/Copy of sweep.cpp&apos; to &apos;Copy_Original.cpp&apos;" description="Rename resource &apos;Copy of sweep.cpp&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="Copy of sweep.cpp" name="Copy_Original.cpp" stamp="1480794949942" updateReferences="true"/>
+</session>

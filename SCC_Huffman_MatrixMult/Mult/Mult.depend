@@ -1,0 +1,8 @@
+# depslib dependency file v1.0
+1477362135 source:e:\algorithms\hw3\mult\main.cpp
+	<climits>
+	<iostream>
+	<vector>
+	<string>
+	<sstream>
+

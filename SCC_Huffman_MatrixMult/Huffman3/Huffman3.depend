@@ -1,0 +1,12 @@
+# depslib dependency file v1.0
+1478207655 source:e:\algorithms\hw3\huffman3\main.cpp
+	<iostream>
+	<vector>
+	<cstdlib>
+	<map>
+	<algorithm>
+	<iomanip>
+	<string>
+	<sstream>
+	<fstream>
+

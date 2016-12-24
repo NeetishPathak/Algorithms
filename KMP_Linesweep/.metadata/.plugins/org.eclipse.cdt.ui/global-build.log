@@ -1,0 +1,139 @@
+15:18:25 **** Build of configuration Debug for project Test ****
+make all 
+Building file: ../src/Test.cpp
+Invoking: Cross G++ Compiler
+g++ -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/Test.d" -MT"src/Test.d" -o "src/Test.o" "../src/Test.cpp"
+Finished building: ../src/Test.cpp
+ 
+Building target: Test
+Invoking: Cross G++ Linker
+g++  -o "Test"  ./src/Test.o   
+Finished building target: Test
+ 
+15:19:13 **** Incremental Build of configuration Debug for project Test ****
+make all 
+make: Nothing to be done for 'all'.
+21:33:28 **** Build of configuration Debug for project Line_Sweep ****
+make all 
+Building file: ../sweep.cpp
+Invoking: Cross G++ Compiler
+g++ -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"sweep.d" -MT"sweep.d" -o "sweep.o" "../sweep.cpp"
+../sweep.cpp: In function ‘void showPointList(std::vector<Point>&)’:
+../sweep.cpp:114:16: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+  for(int i=0; i<pList.size(); ++i){
+                ^
+../sweep.cpp: In function ‘void showLineList(std::vector<LineSegment>&)’:
+../sweep.cpp:129:16: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+  for(int i=0; i<lList.size(); ++i){
+                ^
+../sweep.cpp: In function ‘void sweepLineIntersection(std::vector<Point>, std::vector<LineSegment>)’:
+../sweep.cpp:293:16: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+  for(int i=0; i<pList.size(); ++i){
+                ^
+Finished building: ../sweep.cpp
+ 
+Building target: Line_Sweep
+Invoking: Cross G++ Linker
+g++  -o "Line_Sweep"  ./sweep.o   
+Finished building target: Line_Sweep
+ 
+21:34:25 **** Incremental Build of configuration Debug for project Line_Sweep ****
+make all 
+Building file: ../sweep.cpp
+Invoking: Cross G++ Compiler
+g++ -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"sweep.d" -MT"sweep.d" -o "sweep.o" "../sweep.cpp"
+Finished building: ../sweep.cpp
+ 
+Building target: Line_Sweep
+Invoking: Cross G++ Linker
+g++  -o "Line_Sweep"  ./sweep.o   
+Finished building target: Line_Sweep
+ 
+21:37:21 **** Incremental Build of configuration Debug for project Line_Sweep ****
+make all 
+make: Nothing to be done for 'all'.
+21:39:01 **** Incremental Build of configuration Debug for project Line_Sweep ****
+make all 
+make: Nothing to be done for 'all'.
+21:39:45 **** Incremental Build of configuration Debug for project Line_Sweep ****
+make all 
+make: Nothing to be done for 'all'.
+00:15:57 **** Incremental Build of configuration Debug for project Line_Sweep ****
+make all 
+Building file: ../sweep.cpp
+Invoking: Cross G++ Compiler
+g++ -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"sweep.d" -MT"sweep.d" -o "sweep.o" "../sweep.cpp"
+../sweep.cpp: In function ‘std::vector<Point> sweepLineIntersectionAllPoints(std::vector<Point>, std::vector<LineSegment>)’:
+../sweep.cpp:439:16: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+  for(int i=0; i<pList.size(); ++i){
+                ^
+../sweep.cpp: In function ‘void naiveWay(std::vector<LineSegment>)’:
+../sweep.cpp:760:16: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+  for(int i=0; i< lList.size()-1; ++i){
+                ^
+../sweep.cpp:762:19: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+   for(int j=i+1; j< lList.size(); ++j){
+                   ^
+../sweep.cpp: In function ‘int main()’:
+../sweep.cpp:850:16: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+  for(int i=0; i<intersectionAllPointsVector.size(); ++i){
+                ^
+Finished building: ../sweep.cpp
+ 
+Building file: ../sweep_b.cpp
+Invoking: Cross G++ Compiler
+g++ -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"sweep_b.d" -MT"sweep_b.d" -o "sweep_b.o" "../sweep_b.cpp"
+In file included from ../sweep_b.cpp:10:0:
+../ofxSweepLine.h:10:20: fatal error: ofMain.h: No such file or directory
+compilation terminated.
+subdir.mk:21: recipe for target 'sweep_b.o' failed
+make: *** [sweep_b.o] Error 1
+00:16:47 **** Incremental Build of configuration Debug for project Line_Sweep ****
+make all 
+Building target: Line_Sweep
+Invoking: Cross G++ Linker
+g++  -o "Line_Sweep"  ./sweep.o   
+Finished building target: Line_Sweep
+ 
+00:17:32 **** Incremental Build of configuration Debug for project Line_Sweep ****
+make all 
+make: Nothing to be done for 'all'.
+00:18:13 **** Incremental Build of configuration Debug for project Line_Sweep ****
+make all 
+make: Nothing to be done for 'all'.
+00:22:51 **** Incremental Build of configuration Debug for project Line_Sweep ****
+make all 
+Building file: ../sweep.cpp
+Invoking: Cross G++ Compiler
+g++ -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"sweep.d" -MT"sweep.d" -o "sweep.o" "../sweep.cpp"
+../sweep.cpp: In function ‘std::vector<Point> sweepLineIntersectionAllPoints(std::vector<Point>, std::vector<LineSegment>)’:
+../sweep.cpp:439:16: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+  for(int i=0; i<pList.size(); ++i){
+                ^
+../sweep.cpp: In function ‘void naiveWay(std::vector<LineSegment>)’:
+../sweep.cpp:760:16: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+  for(int i=0; i< lList.size()-1; ++i){
+                ^
+../sweep.cpp:762:19: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+   for(int j=i+1; j< lList.size(); ++j){
+                   ^
+../sweep.cpp: In function ‘int main()’:
+../sweep.cpp:850:16: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+  for(int i=0; i<intersectionAllPointsVector.size(); ++i){
+                ^
+Finished building: ../sweep.cpp
+ 
+Building target: Line_Sweep
+Invoking: Cross G++ Linker
+g++  -o "Line_Sweep"  ./sweep.o   
+Finished building target: Line_Sweep
+ 
+00:22:57 **** Incremental Build of configuration Debug for project Line_Sweep ****
+make all 
+make: Nothing to be done for 'all'.
+00:23:53 **** Incremental Build of configuration Debug for project Line_Sweep ****
+make all 
+make: Nothing to be done for 'all'.
+00:24:47 **** Incremental Build of configuration Debug for project Line_Sweep ****
+make all 
+make: Nothing to be done for 'all'.

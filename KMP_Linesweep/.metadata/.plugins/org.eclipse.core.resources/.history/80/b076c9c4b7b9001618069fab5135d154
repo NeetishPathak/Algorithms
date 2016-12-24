@@ -1,0 +1,1265 @@
+#include <iostream>
+#include <vector>
+#include <map>
+#include <set>
+#include <algorithm>
+#include <stdlib.h>
+#include <cstdio>
+#include <iomanip>
+#include<sstream>
+
+#define pow2(n) (1 << (n))
+
+#define useNavie_nSq 0//naive works fine for single or multiple intersections
+					//I wrote line sweep implemetation (see below) for multiple intersections as well
+					//but it didn't give me all the outputs, so in case
+					//all intersections are required, naive will work
+
+using namespace std;
+
+std::map<float,int> T;	//map to save in lineSegements
+						//while sweeping the plane in increasing
+						//order of y coordinate
+std::map<float,int>::iterator it; //iterator of the map
+
+class Point{
+public:
+	float x;
+	float y;
+	int lineId;
+	int side; //this is a flag associated with point to identify
+			  //it falls on left or right side
+			  //0 -> left side, 1->right side
+	int firstLine;
+	int secLine;
+
+	Point(){
+		this->x=0;
+		this->y=0;
+		this->lineId=-1;
+		this->side=-1;
+		this->firstLine = this->lineId;
+		this->secLine = this->lineId;
+	};
+
+	Point(float x, float y, int lineId, int side){
+		this->x = x;
+		this->y = y;
+		this->lineId = lineId;
+		this->side = side;
+		this->firstLine = this->lineId;
+		this->secLine = this->lineId;
+	};
+
+	~Point(){
+		//do nothing
+	};
+
+	bool isLeft(){
+		if((this->side) == 0)
+			return true;
+		return false;
+	};
+
+	bool isRight(){
+		if((this->side) == 1){
+			return true;
+		}
+		return false;
+	}
+
+	void printPoint(){
+		cout << fixed << setprecision(2) << "(" << this->x << "," << this->y << ") " << "[LId = " << this->lineId
+				<< ", side" << this->side << "]" << endl;
+	}
+
+	void showPointOnly(){
+		cout << fixed << setprecision(2) << this->x << " " << this->y << endl;
+	}
+};
+
+class LineSegment{
+public:
+	Point p1;
+	Point p2;
+	int lineId;
+	float yCoord; //variable used for comparing line segments in the set (decides the position of the Point on the sweep line )
+
+	LineSegment(){
+		this->p1 = Point();
+		this->p2 = Point();
+		this->lineId = -1;
+		this->yCoord = -1;
+	}
+	LineSegment(Point p1, Point p2, int lineId){
+		this->p1 = p1;
+		this->p2 = p2;
+		this->lineId = lineId;
+		this->yCoord = setYCoord(this->p1.y);
+	};
+	~LineSegment(){
+		//do nothing
+	};
+
+	void printLineSegment(){
+		cout << "Line ID: " << lineId << " yCoord" << yCoord <<endl;
+		p1.printPoint();
+		p2.printPoint();
+	};
+
+	float setYCoord(float newX){
+//		float slope = (p2.y - p1.y)/(p2.x - p1.x);
+//		yCoord = slope*(this->p1.x - newX) + p1.y;
+		yCoord = newX;
+		return yCoord;
+	};
+
+};
+
+/*Function:  Prints the contents of the map
+ * */
+void printMap(){
+
+	cout << "[";
+	for(std::map<float,int>::iterator it = T.begin(); it != T.end(); ++it){
+		cout << fixed << setprecision(2) << "(" << it->first << ", " << it->second << ") ";
+	}
+	cout << "]" << endl;
+
+}
+
+/*Function: myPointsCompareX
+ * Arguments: Point, Point
+ * Return: bool
+ * Description: returns true if x coordinate of point p1 is less
+ * 				than x coordinate of p2
+ * */
+bool myPointsCompareX(Point p1, Point p2){
+
+	if(p1.x != p2.x){
+		return (p1.x < p2.x);
+	}
+	return p1.y < p2.y;
+}
+
+/*Function: myPointsCompareY
+ * Arguments: Point, Point
+ * Return: bool
+ * Description: returns true if y coordinate of point p1 is less
+ * 				than y coordinate of p2
+ * */
+bool myPointsCompareY(Point p1, Point p2){
+
+	if(p1.y != p2.y){
+		return (p1.y < p2.y);
+	}
+	return p1.x < p2.x;
+}
+/*Function:sortPointListX
+ * Arguments: vector<Point>
+ * Returns: void
+ * Description: will sort Point Vector based on x coordinate
+ * */
+void sortPointListX(vector<Point> &pList){
+	sort(pList.begin(), pList.end(), myPointsCompareX);
+}
+
+
+/*Function: myLineCompareYCoord
+ * Arguments: LineSegment, LineSegment
+ * Return: bool
+ * Description: Comparator for two linesegments based on their y coordinates
+ * 				useful when sorting the line segments based on y coordinates
+ * 				on the sweep line
+ * */
+bool myLineCompareYCoord(LineSegment l1, LineSegment l2){
+	if(l1.yCoord != l2.yCoord){
+		return (l1.yCoord < l2.yCoord);
+	}else if(l1.p1.y != l2.p1.y){
+		return (l1.p1.y < l2.p1.y);
+	}else if(l1.p2.y != l2.p2.y){
+		return (l1.p2.y < l2.p2.y);
+	}else if(l1.p1.x != l2.p1.x){
+		return (l1.p1.x < l2.p1.x);
+	}
+	return (l1.p2.x < l2.p2.x);
+}
+
+/*Function: sortLineSegmentListY
+ * Arguments: vector<LineSegment>
+ * Returns: void
+ * Description: Sort the line segments according to myLineCompareYCoord criterion*/
+
+void sortLineSegmentListY(vector<LineSegment> &lineSegmentList){
+	sort(lineSegmentList.begin(), lineSegmentList.end(), myLineCompareYCoord);
+}
+
+/*Function: showPointList
+ * Arguments: vector<Point>
+ * Returns: void
+ * Description: prints the pointList on stdout
+ * 				for reference
+ * */
+void showPointList(vector<Point> &pList){
+
+	for(unsigned int i=0; i<pList.size(); ++i){
+		Point p = pList[i];
+		cout << fixed << setprecision(1) << p.x << " " << p.y << " " << p.lineId << " " << p.side << endl;
+	}
+
+}
+
+/*Function: showLineList()
+ * Arguments: vector<LineSegment>
+ * Returns: void
+ * Description: Prints all the lineSegments
+ * */
+
+void showLineList(vector<LineSegment> &lList){
+
+	for(unsigned int i=0; i<lList.size(); ++i){
+		LineSegment ls = lList[i];
+		Point p1 = ls.p1;
+		Point p2 = ls.p2;
+
+		cout << " | " << ls.lineId << " " << ls.yCoord <<  endl;
+		p1.printPoint();
+		p2.printPoint();
+
+	}
+}
+
+/*Function: Orientation of points
+ * Arguments: Point, Point, Point
+ * Returns: bool
+ * Description: Returns 1 if the three points are collinear
+ * */
+bool areCollinear(Point p, Point q, Point r){
+	if(q.x <= max(p.x,r.x) && q.x >= min(p.x,r.x) &&
+			q.y <= max(p.y,r.y) && q.y >= min(p.y,r.y)){
+		return true;
+	}
+	return false;
+}
+
+/*Function: orientation of Points
+ * Arguments: Point, Point, Point
+ * Returns : int
+ * Description: indicates for the ordered
+ * 				triplet is clockwise of anticlockwise
+ * 0 -> p,q,r are collinear
+ * 1 -> Clockwise i.e. qp X rq is negative
+ * 2 -> Anticlockwise   qp X rq is positive
+ * */
+int orientationOfPoints(Point p, Point q, Point r){
+	int val = (q.y - p.y) * (r.x - q.x) -
+				(q.x - p.x) * (r.y - q.y);
+
+	if (val == 0) return 0;  // collinear
+
+	return (val > 0)? 1: 2; // clock or counterclock wise
+
+}
+
+/*Function: doLinesIntersect
+ *Arguments: LineSegment, LineSegment
+ *Returns : int
+ *Description: returns true if the line segments intersect
+ * */
+int doLinesIntersect(LineSegment l1, LineSegment l2){
+
+
+	//Find the orientation of the points on the lines
+	//to consider the special case of collinearity of
+	//end points
+	int o1 = orientationOfPoints(l1.p1, l1.p2, l2.p1);
+	int o2 = orientationOfPoints(l1.p1, l1.p2, l2.p2);
+	int o3 = orientationOfPoints(l2.p1, l2.p2, l1.p1);
+	int o4 = orientationOfPoints(l2.p1, l2.p2, l1.p2);
+
+
+	//Based on the orientation we can say whether the line segments
+	//intersect or not
+
+	if(o1 != o2 && o3 != o4)return true; //line segments intersect
+
+	//Handle special cases of collinearity
+
+	//if l2.p1 lies on line segment l1
+	if(o1 == 0 && areCollinear(l1.p1, l2.p1, l1.p2)) return true;
+
+	//if l2.p2 lies on line segment l1
+	if(o2 == 0 && areCollinear(l1.p1, l2.p2, l1.p2)) return true;
+
+	//if l1.p1 lies on line segment l2
+	if(o3 == 0 && areCollinear(l2.p1, l1.p1, l2.p2)) return true;
+
+	//if l1.p2 lies on line segment l2
+	if(o4 == 0 && areCollinear(l2.p1, l1.p2, l2.p2)) return true;
+
+	return false;
+}
+
+/*Function: intersectionPoint
+ * Arguments: LineSegment, LineSegment
+ * Returns:  void
+ * Description: prints Point of intersection of
+ * 				two line segments if they intersect
+ * */
+Point intersectionPoint(LineSegment l1, LineSegment l2){
+
+	//coordinates for line 1
+	Point p11 = l1.p1;
+
+	float x11 = p11.x;
+	float y11 = p11.y;
+
+	Point p21 = l1.p2;
+
+	float x21 = p21.x;
+	float y21 = p21.y;
+
+	float m1= (y21-y11)/(x21-x11); //slopeLine1
+	float b1 = (x21*y11 - x11*y21)/(x21-x11); //interceptLine1
+
+	Point p12 = l2.p1;
+
+	float x12 = p12.x;
+	float y12 = p12.y;
+
+	Point p22 = l2.p2;
+
+	float x22 = p22.x;
+	float y22 = p22.y;
+
+	float m2 = (y22 - y12)/(x22 - x12); //slopeLine2
+	float b2 = (x22*y12 - x12*y22)/(x22 - x12); //interceptLine2
+
+	//IntersectionPoint
+	float y = (m1*b2 - m2*b1)/(m1 - m2);
+	float x = (b2 - b1)/(m1 - m2);
+
+	Point retP = Point(x,y,-1,-1);
+	retP.firstLine = l1.lineId;
+	retP.secLine = l2.lineId;
+	return retP;
+
+}
+
+/****************************************************************************
+ * Function: sweepLineIntersection
+ * Arguments: vector<Point> pList
+ * Returns: void
+ * Description: sweepLineIntersection algo to find all the intersection points
+ * ***************************************************************************/
+vector<Point> sweepLineIntersection(vector<Point> pList, vector<LineSegment> lineList){
+
+	//sort the points from left to right based on x coordinate values
+	sortPointListX(pList);
+
+	//vector for the intersection points
+	vector<Point> intersectionPointsVector;
+
+	//create a map which is a self balancing tree
+	std::map<float,int>::iterator prevItr;
+	std::map<float,int>::iterator nextItr;
+
+	for(unsigned int i=0; i<pList.size(); ++i){
+
+		Point p = pList[i];
+		int ptLineId = p.lineId;
+//		p.printPoint();
+//		cout << "This point is on " << p.side << endl;
+
+		if(p.isLeft()){
+//			cout << "will be added " << endl;
+
+			T[p.y] = ptLineId;
+//			printMap();
+
+			it = T.find(p.y); //iterator for the current point
+			//current Line
+			LineSegment curLine = lineList[it->second];
+//			cout << "Current Line Segment ";
+//			curLine.printLineSegment();
+
+
+			if(it != T.begin()){
+				prevItr = it;
+				--prevItr;
+
+				//check if the point intersects with its predecessor or successor
+				if(prevItr != T.end()){
+					LineSegment prevLine = lineList[prevItr->second];
+//					cout << "Previous line segment ";
+//					prevLine.printLineSegment();
+					if(doLinesIntersect(curLine,prevLine) && (it != prevItr)){
+						Point intPoint = intersectionPoint(curLine, prevLine);
+						intersectionPointsVector.push_back(intPoint);
+					}
+
+				}
+			}
+
+			if(it != T.end()){
+				nextItr = it;
+				++nextItr;
+			}
+
+			if(nextItr != T.end()){
+				LineSegment nextLine = lineList[nextItr->second];
+//				cout << "Next line segment ";
+//				nextLine.printLineSegment();
+				if(doLinesIntersect(curLine,nextLine) && (it != nextItr)){
+					Point intPoint = intersectionPoint(curLine, nextLine);
+					intersectionPointsVector.push_back(intPoint);
+				}
+			}
+
+
+
+		}else{
+
+			//cout << "Will be removed" << endl;
+			//If the point is the right end of the line
+			it = T.find(lineList[ptLineId].p1.y); //iterator for the current point
+
+			if(it != T.begin()){
+				prevItr = it;
+				--prevItr;
+			}
+
+			if(it != T.end()){
+				nextItr = it;
+				++nextItr;
+			}
+
+			if(prevItr != T.end() && nextItr != T.end()){
+				LineSegment prevLine = lineList[prevItr->second];
+				//cout << "Previous line is " ;
+//				prevLine.printLineSegment();
+				LineSegment nextLine = lineList[nextItr->second];
+				//cout << "Next line is " ;
+//				nextLine.printLineSegment();
+				if(doLinesIntersect(prevLine,nextLine) && (prevItr != nextItr)){
+					Point intPoint = intersectionPoint(prevLine, nextLine);
+					intersectionPointsVector.push_back(intPoint);
+				}
+			}
+
+			T.erase(lineList[ptLineId].p1.y);
+
+		}
+
+	}
+
+	return intersectionPointsVector;
+}
+
+/***************************************************************************
+ * Function: showPQ: utility function to show the elemnts of Priority queue
+ * *************************************************************************/
+void showPQ(std::set<Point,bool(*)(Point,Point)> pq){
+	cout << "SHOW PQ" << endl;
+	for(std::set<Point,bool(*)(Point,Point)>::iterator i = pq.begin(); i!= pq.end(); ++i){
+		Point p = *i;
+		cout << "((" << p.x << "," << p.y << ") FL: " << p.firstLine << ", SL: " << p.secLine << ")";
+	}
+	cout << endl;
+}
+
+/***************************************************************************
+ * Function: showSL: utility function to show the elements of Priority queue
+ * *************************************************************************/
+void showSL(std::set<LineSegment,bool(*)(LineSegment,LineSegment)> sl){
+	cout << "SHOW SL" << endl;
+	for(std::set<LineSegment,bool(*)(LineSegment,LineSegment)>::iterator i = sl.begin(); i != sl.end(); ++i){
+		LineSegment ls = *i;
+		cout << "((" << ls.p1.x << "," << ls.p1.y << ")," << "(" << ls.p2.x << "," << ls.p2.y << "), LId: " << ls.lineId << ", yCoord: " << ls.yCoord << ")";
+	}
+	cout << endl;
+}
+
+
+/*FunctionL sweepLineIntersectionAllPoints2
+ * Arguments: vector<Point> pList, vector<LineSegment> lineList
+ * Returns: vector<Point>
+ * Description: Returns all the Intersection points
+ *
+ * -------------------------------------------------------
+ * I tried implementing it (Benteley-Ottoman Algorithm for line sweep)
+ *  but I am not able to get all the intersection points.
+ * Here I am swapping the lineSegments when an intersection point event is found
+ * in the priority queue. The swap is happening based on left side y coordinate of
+ * the line segment. Couldn't figure out why didn't work. For smaller input (I made
+ * my custom input with three intersections), I got the right answer though.
+ * -------------------------------------------------------
+*/
+
+vector<Point> sweepLineIntersectionAllPoints2(vector<Point> pList, vector<LineSegment> lineList){
+
+	//sort the points from left to right based on x coordinate values
+	sortPointListX(pList);
+
+	//set to store all event points (i.e. left, right and intersection)
+	//sorted by x coordinate
+	bool(*cmp_X)(Point,Point) = myPointsCompareX;
+	std::set<Point,bool(*)(Point,Point)> PQ(cmp_X);
+
+	for(int i=0; i<pList.size(); ++i){
+		Point p = pList[i];
+		PQ.insert(p);
+	}
+
+	bool(*cmp_XAgain)(Point,Point) = myPointsCompareX;
+	std::set<Point,bool(*)(Point,Point)> processedInts(cmp_XAgain);
+
+	//set to store all the line segments points sorted by y coordinate
+	bool(*cmp_YCoord)(LineSegment, LineSegment) = myLineCompareYCoord;
+	std::set<LineSegment,bool(*)(LineSegment,LineSegment)> SL(cmp_YCoord);
+	std::set<LineSegment,bool(*)(LineSegment,LineSegment)>::iterator slItr;
+
+	//vector for the intersection points
+	vector<Point> intersectionPointsVector;
+
+	//create a map which is a self balancing tree
+	std::set<LineSegment,bool(*)(LineSegment, LineSegment)>::iterator prevItr;
+	std::set<LineSegment,bool(*)(LineSegment, LineSegment)>::iterator nextItr;
+	//showPQ(PQ);
+	//showSL(SL);
+
+	while(!PQ.empty()){
+
+		set<Point,bool(*)(Point,Point)>::iterator pqFront = PQ.begin();
+		Point p = *pqFront;
+		//p.printPoint();
+		prevItr = SL.end();
+		nextItr = SL.end();
+
+		if(p.isLeft()){//p is a point on the left side of a lineSegment
+
+			//Find the line id corresponding to the point
+			int lineId = p.lineId;
+			LineSegment curLine = lineList[lineId];
+
+			//Insert the line Segment in the tree
+			SL.insert(curLine);
+
+			//current position of the line in the SL set
+			slItr = SL.find(curLine);
+
+			if(slItr != SL.end()){
+
+				if(slItr != SL.begin()){
+					prevItr = slItr;
+					--prevItr;
+
+				}
+
+				if(slItr != SL.end()){
+					nextItr = slItr;
+					++nextItr;
+
+				}
+
+
+				if(slItr != SL.begin() && prevItr != SL.end() && nextItr != SL.end()){
+					LineSegment prevLine = lineList[prevItr->lineId];
+					LineSegment nextLine = lineList[nextItr->lineId];
+					if(doLinesIntersect(prevLine, nextLine)){
+						Point intPoint = intersectionPoint(prevLine, nextLine);
+						PQ.erase(intPoint);
+					}
+				}
+
+
+				//check if the previous and current line intersect
+				if( slItr != SL.begin() && prevItr != SL.end()){
+					//cout << prevItr->lineId << endl;
+					//cout << slItr->lineId << endl;
+					LineSegment prevLine = lineList[prevItr->lineId];
+					LineSegment curLine = lineList[slItr->lineId];
+
+					if(doLinesIntersect(prevLine, curLine)){
+						Point intPoint = intersectionPoint(prevLine, curLine);
+//						if(processedInts.find(intPoint) == processedInts.end()){
+							PQ.insert(intPoint);
+//						}
+
+						//intersectionPointsVector.push_back(intPoint);
+					}
+				}
+
+
+				//check if the current and next line intersect
+				if(slItr != SL.end() && nextItr != SL.end()){
+					LineSegment curLine = lineList[slItr->lineId];
+					LineSegment nextLine = lineList[nextItr->lineId];
+
+					if(doLinesIntersect(curLine, nextLine)){
+						Point intPoint = intersectionPoint(curLine, nextLine);
+//						if(processedInts.find(intPoint) == processedInts.end()){
+							PQ.insert(intPoint);
+//						}//intersectionPointsVector.push_back(intPoint);
+					}
+				}
+			}
+		}else if(p.isRight()){//p is a point on the right side of a lineSegment
+
+			//find the lineId corresponding to the point
+			int lineId = p.lineId;
+			LineSegment curLine = lineList[lineId];
+			//Iterator of the current line
+			slItr = SL.find(curLine);
+
+			if(slItr != SL.end()){
+
+				if(slItr != SL.begin()){
+					prevItr = slItr;
+					--prevItr;
+
+				}
+
+				if(slItr != SL.end()){
+					nextItr = slItr;
+					++nextItr;
+				}
+
+				//remove the lineSegment from SL. It is completely sweeped
+				SL.erase(curLine);
+
+
+				if(slItr != SL.begin() && prevItr != SL.end() && nextItr != SL.end()){
+
+					LineSegment prevLine = lineList[prevItr->lineId];
+					LineSegment nextLine = lineList[nextItr->lineId];
+
+					if(prevItr != SL.end() && nextItr != SL.end()){
+						if(doLinesIntersect(prevLine, nextLine)){
+							Point intPoint = intersectionPoint(prevLine, nextLine);
+							if(PQ.find(intPoint) == PQ.end()){
+//								if(processedInts.find(intPoint) == processedInts.end()){
+									PQ.insert(intPoint);
+//								}
+							}
+						}
+					}
+				}
+
+			}
+		}else{//point is an intersection point
+
+//			cout << "Intersection Point found as ";p.showPointOnly();
+			//Put the point in the intersectionPointVector
+			intersectionPointsVector.push_back(p);
+			processedInts.insert(p);
+
+			//Identify the lines this intersection point was formed by
+			int firstLineSegmentId = p.firstLine;
+//			cout << "first LS id is " << firstLineSegmentId << endl;
+			int secondLineSegmentId = p.secLine;
+//			cout << "sec LS id is " << secondLineSegmentId << endl;
+
+			//These lines must be present in the SL since their
+			//intersection is identified now
+			LineSegment firstLS = lineList[firstLineSegmentId];
+			LineSegment secondLS = lineList[secondLineSegmentId];
+//			cout << "So the lines are " << endl;
+//			firstLS.printLineSegment();
+//			secondLS.printLineSegment();
+
+			//find the iterators of these lines in the SL set
+			std::set<LineSegment,bool(*)(LineSegment,LineSegment)>::iterator higherItr;
+			std::set<LineSegment,bool(*)(LineSegment,LineSegment)>::iterator lowerItr;
+
+			//Since this is the intersection point, the yCoord values of
+			//these lines will change their yCoords for sweep process beyond this point
+			//this is necessary for swapping the lines in the SL tree
+			float yCoordFirst = lineList[firstLineSegmentId].yCoord;
+			float yCoordSecond = lineList[secondLineSegmentId].yCoord;
+
+			lineList[firstLineSegmentId].yCoord = lineList[firstLineSegmentId].setYCoord(yCoordSecond);
+			lineList[secondLineSegmentId].yCoord = lineList[secondLineSegmentId].setYCoord(yCoordFirst);
+
+			//check which line segment had the higher yCoord earlier
+			if(firstLS.yCoord > secondLS.yCoord){
+
+//				cout << "FirstLS has higher ycoord" << endl;
+				//firstLine had the higher yCoord
+				SL.erase(firstLS);
+				//secondLine has the lower yCoord
+				SL.erase(secondLS);
+
+				SL.insert(lineList[secondLineSegmentId]);
+				higherItr = SL.find(lineList[secondLineSegmentId]);
+
+				SL.insert(lineList[firstLineSegmentId]);
+				lowerItr = SL.find(lineList[firstLineSegmentId]);
+
+			}else{
+//				cout << "SecondLS has higher ycoord" << endl;
+				//firstLine has the lower yCoord
+
+//				cout << "I am getting erased 1" << endl;
+//				firstLS.printLineSegment();
+				SL.erase(firstLS);
+
+				//secondLine had the higher yCoord
+//				cout << "I am getting erased 2" << endl;
+//				secondLS.printLineSegment();
+				SL.erase(secondLS);
+
+
+//				cout << "I am gettiing inserted 1" << endl;
+//				lineList[secondLineSegmentId].printLineSegment();
+				SL.insert(lineList[secondLineSegmentId]);
+				lowerItr = SL.find(lineList[secondLineSegmentId]);
+
+
+//				cout << "I am getting inserted 2" << endl;
+//				lineList[firstLineSegmentId].printLineSegment();
+				SL.insert(lineList[firstLineSegmentId]);
+				higherItr = SL.find(lineList[firstLineSegmentId]);
+			}
+
+//			cout << "swapping is done now do more comparison" << endl;
+			//find the LineSegment above higher iterator, call it segHH
+			std::set<LineSegment,bool(*)(LineSegment,LineSegment)>::iterator segHH = SL.end();// = SL.find(firstLS);
+
+			if(higherItr != SL.end()){
+				segHH = higherItr;
+				++segHH;
+			}
+
+			//find the LineSegment below lowerIterator, call it segLL
+			std::set<LineSegment,bool(*)(LineSegment,LineSegment)>::iterator segLL = SL.end();// = SL.find(firstLS);
+			if(lowerItr != SL.begin() && lowerItr != SL.end()){
+				segLL = lowerItr;
+				--segLL;
+
+			}
+
+
+			if(segHH != SL.end()){
+//				cout << "This is hit1" << endl;
+				if(doLinesIntersect(lineList[segHH->lineId],lineList[lowerItr->lineId])){
+					Point intPoint = intersectionPoint(lineList[segHH->lineId],lineList[lowerItr->lineId]);
+					if(PQ.find(intPoint) != PQ.end()){
+						PQ.erase(intPoint);
+					}
+				}
+			}
+
+
+
+			if(segLL != SL.end()){
+//				cout << "This is hit2" << endl;
+				if(doLinesIntersect(lineList[segLL->lineId],lineList[higherItr->lineId])){
+					Point intPoint = intersectionPoint(lineList[segLL->lineId],lineList[higherItr->lineId]);
+//					if(PQ.find(intPoint) != PQ.end()){
+						PQ.erase(intPoint);
+//					}
+				}
+			}
+
+
+
+			//After swapping, is the higher Iterator line segment intersecting with the one above it
+			if(segHH != SL.end()){
+//				cout << "This is hit3" << endl;
+				if(doLinesIntersect(lineList[segHH->lineId],lineList[higherItr->lineId])){
+					Point intPoint = intersectionPoint(lineList[segHH->lineId],lineList[higherItr->lineId]);
+//					if(processedInts.find(intPoint) == processedInts.end()){
+						PQ.insert(intPoint);
+//					}
+				}
+			}
+
+			//After swapping, is the lower Iterator line segment intersecting with the one below it
+			if(segLL != SL.end()){
+//				cout << "This is hit4" << endl;
+				if(doLinesIntersect(lineList[segLL->lineId],lineList[lowerItr->lineId])){
+					Point intPoint = intersectionPoint(lineList[segLL->lineId],lineList[lowerItr->lineId]);
+					if(processedInts.find(intPoint) == processedInts.end()){
+						PQ.insert(intPoint);
+					}
+				}
+			}
+
+
+		}
+
+		PQ.erase(p);
+		//showPQ(PQ);
+		//showSL(SL);
+	}
+
+	return intersectionPointsVector;
+
+}
+
+/*FunctionL sweepLineIntersectionAllPoints
+ * Arguments: vector<Point> pList, vector<LineSegment> lineList
+ * Returns: vector<Point>
+ * Description: Returns all the Intersection points
+ *
+ * -------------------------------------------------------
+ * I tried implementing it but I am not able to get all the intersection points.
+ * Here I am swapping the lineSegments when an intersection point event is found
+ * int the priority queue. The swap is happening based on left side y coordinate of
+ * the line segment. Couldn't figure out why didn't work. For smaller input (I made
+ * my custom input with three intersections), I got the right answer though
+ * -------------------------------------------------------
+*/
+vector<Point> sweepLineIntersectionAllPoints(vector<Point> pList, vector<LineSegment> lineList){
+
+	//sort the points from left to right based on x coordinate values
+	sortPointListX(pList);
+
+	//set to store all event points (i.e. left, right and intersection)
+	//sorted by x coordinate
+	bool(*cmp_X)(Point,Point) = myPointsCompareX;
+	std::set<Point,bool(*)(Point,Point)> PQ(cmp_X);
+
+	for(int i=0; i<pList.size(); ++i){
+		Point p = pList[i];
+		PQ.insert(p);
+	}
+
+	bool(*cmp_XAgain)(Point,Point) = myPointsCompareX;
+	std::set<Point,bool(*)(Point,Point)> processedInts(cmp_XAgain);
+
+	//set to store all the line segments points sorted by y coordinate
+	bool(*cmp_YCoord)(LineSegment, LineSegment) = myLineCompareYCoord;
+	std::set<LineSegment,bool(*)(LineSegment,LineSegment)> SL(cmp_YCoord);
+	std::set<LineSegment,bool(*)(LineSegment,LineSegment)>::iterator slItr;
+
+	//vector for the intersection points
+	vector<Point> intersectionPointsVector;
+
+	//create a set which is a self balancing tree
+	std::set<LineSegment,bool(*)(LineSegment, LineSegment)>::iterator prevItr;
+	std::set<LineSegment,bool(*)(LineSegment, LineSegment)>::iterator nextItr;
+	//showPQ(PQ);
+	//showSL(SL);
+
+	while(!PQ.empty()){
+
+		set<Point,bool(*)(Point,Point)>::iterator pqFront = PQ.begin();
+		Point p = *pqFront;
+		//p.printPoint();
+
+		if(p.isLeft()){//p is a point on the left side of a lineSegment
+
+			//Find the line id corresponding to the point
+			int lineId = p.lineId;
+			LineSegment curLine = lineList[lineId];
+
+			//Insert the line Segment in the tree
+			SL.insert(curLine);
+
+			//current position of the line in the SL set
+			slItr = SL.find(curLine);
+
+			if(slItr != SL.end()){
+
+				if(slItr != SL.begin()){
+					prevItr = slItr;
+					--prevItr;
+
+				}
+
+				if(slItr != SL.end()){
+					nextItr = slItr;
+					++nextItr;
+
+				}
+
+
+				if(slItr != SL.begin() && prevItr != SL.end() && nextItr != SL.end()){
+					LineSegment prevLine = lineList[prevItr->lineId];
+					LineSegment nextLine = lineList[nextItr->lineId];
+					if(doLinesIntersect(prevLine, nextLine)){
+						Point intPoint = intersectionPoint(prevLine, nextLine);
+						PQ.erase(intPoint);
+					}
+				}
+
+
+				//check if the previous and current line intersect
+				if( slItr != SL.begin() && prevItr != SL.end()){
+					//cout << prevItr->lineId << endl;
+					//cout << slItr->lineId << endl;
+					LineSegment prevLine = lineList[prevItr->lineId];
+					LineSegment curLine = lineList[slItr->lineId];
+
+					if(doLinesIntersect(prevLine, curLine)){
+						Point intPoint = intersectionPoint(prevLine, curLine);
+//						if(processedInts.find(intPoint) == processedInts.end()){
+							PQ.insert(intPoint);
+//						}
+						//intersectionPointsVector.push_back(intPoint);
+					}
+				}
+
+
+				//check if the current and next line intersect
+				if(slItr != SL.end() && nextItr != SL.end()){
+					LineSegment curLine = lineList[slItr->lineId];
+					LineSegment nextLine = lineList[nextItr->lineId];
+
+					if(doLinesIntersect(curLine, nextLine)){
+						Point intPoint = intersectionPoint(curLine, nextLine);
+//						if(processedInts.find(intPoint) == processedInts.end()){
+							PQ.insert(intPoint);
+//						}//intersectionPointsVector.push_back(intPoint);
+					}
+				}
+			}
+		}else if(p.isRight()){//p is a point on the right side of a lineSegment
+
+			//find the lineId corresponding to the point
+			int lineId = p.lineId;
+			LineSegment curLine = lineList[lineId];
+			//Iterator of the current line
+			slItr = SL.find(curLine);
+
+			if(slItr != SL.end()){
+
+				if(slItr != SL.begin()){
+					prevItr = slItr;
+					--prevItr;
+
+				}
+
+				if(slItr != SL.end()){
+					nextItr = slItr;
+					++nextItr;
+				}
+
+				//remove the lineSegment from SL. It is completely sweeped
+				SL.erase(curLine);
+
+
+				if(slItr != SL.begin() && prevItr != SL.end() && nextItr != SL.end()){
+
+					LineSegment prevLine = lineList[prevItr->lineId];
+					LineSegment nextLine = lineList[nextItr->lineId];
+
+					if(prevItr != SL.end() && nextItr != SL.end()){
+						if(doLinesIntersect(prevLine, nextLine)){
+							Point intPoint = intersectionPoint(prevLine, nextLine);
+							if(PQ.find(intPoint) == PQ.end()){
+//								if(processedInts.find(intPoint) == processedInts.end()){
+									PQ.insert(intPoint);
+//								}
+							}
+						}
+					}
+				}
+
+			}
+		}else{//point is an intersection point
+
+//			cout << "Intersection Point found as ";p.showPointOnly();
+			//Put the point in the intersectionPointVector
+			intersectionPointsVector.push_back(p);
+			processedInts.insert(p);
+
+			//Identify the lines this intersection point was formed by
+			int firstLineSegmentId = p.firstLine;
+//			cout << "first LS id is " << firstLineSegmentId << endl;
+			int secondLineSegmentId = p.secLine;
+//			cout << "sec LS id is " << secondLineSegmentId << endl;
+
+			//These lines must be present in the SL since their
+			//intersection is identified now
+			LineSegment firstLS = lineList[firstLineSegmentId];
+			LineSegment secondLS = lineList[secondLineSegmentId];
+
+			//find the iterators of these lines in the SL set
+			std::set<LineSegment,bool(*)(LineSegment,LineSegment)>::iterator higherItr;
+			std::set<LineSegment,bool(*)(LineSegment,LineSegment)>::iterator lowerItr;
+
+			//Since this is the intersection point, the yCoord values of
+			//these lines will change their yCoords for sweep process beyond this point
+			//this is necessary for swapping the lines in the SL tree
+			int yCoordFirst = lineList[firstLineSegmentId].yCoord;
+			int yCoordSecond = lineList[secondLineSegmentId].yCoord;
+			lineList[firstLineSegmentId].yCoord = lineList[firstLineSegmentId].setYCoord(secondLS.p1.y);
+			lineList[secondLineSegmentId].yCoord = lineList[secondLineSegmentId].setYCoord(firstLS.p1.y);
+
+
+			//check which line segment had the higher yCoord earlier
+			if(firstLS.yCoord > secondLS.yCoord){
+
+//				cout << "FirstLS has higher ycoord" << endl;
+				//firstLine had the higher yCoord
+				SL.erase(firstLS);
+				//secondLine has the lower yCoord
+				SL.erase(secondLS);
+
+				SL.insert(lineList[secondLineSegmentId]);
+				higherItr = SL.find(lineList[secondLineSegmentId]);
+
+				SL.insert(lineList[firstLineSegmentId]);
+				lowerItr = SL.find(lineList[firstLineSegmentId]);
+
+			}else{
+//				cout << "SecondLS has higher ycoord" << endl;
+				//firstLine has the lower yCoord
+
+//				cout << "I am getting erased 1" << endl;
+//				firstLS.printLineSegment();
+				SL.erase(firstLS);
+
+				//secondLine had the higher yCoord
+//				cout << "I am getting erased 2" << endl;
+//				secondLS.printLineSegment();
+				SL.erase(secondLS);
+
+
+//				cout << "I am gettiing inserted 1" << endl;
+//				lineList[secondLineSegmentId].printLineSegment();
+				SL.insert(lineList[secondLineSegmentId]);
+				lowerItr = SL.find(lineList[secondLineSegmentId]);
+
+
+//				cout << "I am getting inserted 2" << endl;
+//				lineList[firstLineSegmentId].printLineSegment();
+				SL.insert(lineList[firstLineSegmentId]);
+				higherItr = SL.find(lineList[firstLineSegmentId]);
+			}
+
+//			cout << "swapping is done now do more comparison" << endl;
+			//find the LineSegment above higher iterator, call it segHH
+			std::set<LineSegment,bool(*)(LineSegment,LineSegment)>::iterator segHH = SL.end();// = SL.find(firstLS);
+
+			if(higherItr != SL.end()){
+				segHH = higherItr;
+				++segHH;
+			}
+
+			//find the LineSegment below lowerIterator, call it segLL
+			std::set<LineSegment,bool(*)(LineSegment,LineSegment)>::iterator segLL = SL.end();// = SL.find(firstLS);
+			if(lowerItr != SL.begin()){
+				segLL = lowerItr;
+				--segLL;
+
+			}
+
+			if(segHH != SL.end()){
+//				cout << "This is hit1" << endl;
+				if(doLinesIntersect(lineList[segHH->lineId],lineList[lowerItr->lineId])){
+					Point intPoint = intersectionPoint(lineList[segHH->lineId],lineList[lowerItr->lineId]);
+					if(PQ.find(intPoint) != PQ.end()){
+						PQ.erase(intPoint);
+					}
+				}
+			}
+
+			if(segLL != SL.end()){
+//				cout << "This is hit2" << endl;
+				if(doLinesIntersect(lineList[segLL->lineId],lineList[higherItr->lineId])){
+					Point intPoint = intersectionPoint(lineList[segLL->lineId],lineList[higherItr->lineId]);
+					if(PQ.find(intPoint) != PQ.end()){
+						PQ.erase(intPoint);
+					}
+				}
+			}
+
+
+			//After swapping, is the higher Iterator line segment intersecting with the one above it
+			if(segHH != SL.end()){
+//				cout << "This is hit3" << endl;
+				if(doLinesIntersect(lineList[segHH->lineId],lineList[higherItr->lineId])){
+					Point intPoint = intersectionPoint(lineList[segHH->lineId],lineList[higherItr->lineId]);
+//					if(processedInts.find(intPoint) == processedInts.end()){
+						PQ.insert(intPoint);
+//					}
+				}
+			}
+
+			//After swapping, is the lower Iterator line segment intersecting with the one below it
+			if(segLL != SL.end()){
+//				cout << "This is hit4" << endl;
+				if(doLinesIntersect(lineList[segLL->lineId],lineList[lowerItr->lineId])){
+					Point intPoint = intersectionPoint(lineList[segLL->lineId],lineList[lowerItr->lineId]);
+//					if(processedInts.find(intPoint) == processedInts.end()){
+						PQ.insert(intPoint);
+//					}
+				}
+			}
+
+
+		}
+
+		PQ.erase(p);
+		//showPQ(PQ);
+		//showSL(SL);
+	}
+
+	return intersectionPointsVector;
+
+}
+
+
+/*Function: tesLineIntersectionFunction()
+ * Arguments: NA
+ * Returns: Point
+ * Description: Test function Returns the point of intersection if the lines intersect
+ * Sanity Test*/
+void tesLineIntersectionFunction(){
+
+	LineSegment l1(Point(0,0,-1,-1),Point(2,0,-1,-1),-1);
+	LineSegment l2(Point(0,1,-1,-1),Point(1.5,0,-1,-1),-1);
+
+	if(doLinesIntersect(l1,l2)){
+		intersectionPoint(l1,l2);
+		return;
+	}
+
+	cout << "Lines do not intersect" << endl;
+	return;
+}
+
+
+/*Function: Naive way (n^2) to find intersection
+ * */
+vector<Point> naiveWay(vector<LineSegment> lList){
+	vector<Point>  intersectionPoints;
+	for(int i=0; i< lList.size()-1; ++i){
+		LineSegment l1 = lList[i];
+		for(int j=i+1; j< lList.size(); ++j){
+			LineSegment l2 = lList[j];
+
+			if(doLinesIntersect(l1,l2)){
+				Point p = intersectionPoint(l1,l2);
+				intersectionPoints.push_back(p);
+//				p.showPointOnly();
+			}
+		}
+	}
+	return intersectionPoints;
+}
+
+
+/*Function: main
+ * Arguments:NA
+ * Returns: int
+ * Description:
+ * */
+
+int main(){
+
+	int lineCount = 0;
+	cin >> lineCount;
+	float x1 = 0.0,y1 = 0.0,x2 = 0.0,y2 = 0.0;
+	vector<Point> pointsList;
+	vector<LineSegment> lineSegmentList;
+	vector<LineSegment> lineSegmentLevelProritized;
+
+	//set to store all the line segments points sorted by y coordinate
+	bool(*cmp_YCoord)(LineSegment, LineSegment) = myLineCompareYCoord;
+	std::set<LineSegment,bool(*)(LineSegment,LineSegment)> lineSegmentYCoordPrioritized(cmp_YCoord);
+	std::set<LineSegment,bool(*)(LineSegment,LineSegment)>::iterator slItr;
+
+	//Read the input coordinates and prepare the points and lines list
+	for(int i=0; i<lineCount; ++i){
+
+		//Read the coordinates
+		cin >> x1 >> y1 >> x2 >> y2;
+
+		//Prepare the points for pointsList
+		if(x1 < x2){
+			Point p1(x1,y1,i,0); //left point
+			Point p2(x2,y2,i,1); //right point
+
+			//push the points in pointsList
+			pointsList.push_back(p1); pointsList.push_back(p2);
+
+			//prepare the line segment
+			LineSegment l(p1,p2,i);
+			//push the line segment into the lineSegmentList
+			lineSegmentList.push_back(l);
+
+			lineSegmentYCoordPrioritized.insert(l);
+
+		}else{
+			Point p1(x2,y2,i,0); //left point
+			Point p2(x1,y1,i,1); //right point
+
+			//push the points in pointsList
+			pointsList.push_back(p1); pointsList.push_back(p2);
+
+			//prepare the line segment
+			LineSegment l(p1,p2,i);
+			//push the line segment into the lineSegmentList
+			lineSegmentList.push_back(l);
+
+		}
+
+	}
+
+
+#if useNavie_nSq
+	//Naive way to find the intersections is working fine for multiple intersections
+	// Working code - naive way
+	vector<Point> intersectionPointsVector = naiveWay(lineSegmentList); //This is working fine
+#else
+
+	//sort the pointsList based on value of x axis
+	sortPointListX(pointsList);
+	// Working code with (do not return) when a single intersection is found
+
+	vector<Point> intersectionPointsVector = sweepLineIntersection(pointsList, lineSegmentList);
+#endif
+
+	sortPointListX(intersectionPointsVector);
+
+	for(int i=0; i<intersectionPointsVector.size(); ++i){
+		Point p = intersectionPointsVector[i];
+		cout << fixed << setprecision(2) << p.x << " " << p.y << endl;
+	}
+
+//sort the line segments as per y axis (Give higher y -axis higher priority)
+
+	lineSegmentLevelProritized.resize(lineSegmentList.size());
+	int counter = 0;
+	for(slItr = lineSegmentYCoordPrioritized.begin(); slItr != lineSegmentYCoordPrioritized.end();  ++slItr){
+		LineSegment ls = *(slItr);
+		float yCoord = (float)counter;
+		ls.yCoord = yCoord;
+		lineSegmentLevelProritized[ls.lineId] = ls;
+		counter++;
+	}
+
+
+//working code for single intersection. Not sure why it doesn't ggive all outputs in case of multiple
+//interscetions
+
+//		vector<Point> intersectionAllPointsVector = sweepLineIntersectionAllPoints(pointsList, lineSegmentList);
+//		sortPointListX(intersectionAllPointsVector);
+//
+//		for(int i=0; i<intersectionAllPointsVector.size(); ++i){
+//			Point p = intersectionAllPointsVector[i];
+//			cout << fixed << setprecision(2) << p.x << " " << p.y << endl;
+//			//p.printPoint();
+//		}
+//		intersectionAllPointsVector.clear();
+
+
+//Working code for single intersection. Not sure doesnt give all outputs for multiple intersections
+
+	vector<Point>	intersectionAllPointsVector = sweepLineIntersectionAllPoints2(pointsList, lineSegmentLevelProritized);
+			sortPointListX(intersectionAllPointsVector);
+
+			for(int i=0; i<intersectionAllPointsVector.size(); ++i){
+				Point p = intersectionAllPointsVector[i];
+				cout << fixed << setprecision(2) << p.x << " " << p.y << endl;
+				//p.printPoint();
+			}
+
+		return 0;
+
+}
